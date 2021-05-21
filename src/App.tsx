@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import PokemonDisplay from "./components/pages/PokemonDisplay";
 import styled from "styled-components";
+
 const Logo = styled.div`
   text-align: center;
   margin-top: 10px;

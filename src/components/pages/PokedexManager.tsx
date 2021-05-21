@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { fetchAndProcessPokemons, ProcessedPokemon } from "../../api/pokeapi";
 import PokemonCard from "../layout/PokemonCard";
+import InfiniteScroll from "react-infinite-scroller";
 
 const Container = styled.div`
   display: flex;
@@ -23,7 +24,6 @@ const PokedexManager = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
         const { pokemons } = await fetchAndProcessPokemons(skip);
         setPokemonsData((prev) => [...prev, ...pokemons]);
         setIsLoading(false);
@@ -37,16 +37,20 @@ const PokedexManager = () => {
 
   return (
     <div style={{ textAlign: "center" }}>
-      <button onClick={handleLoadMore}>Load More</button>
-
       {isLoading ? (
-        "Loading..."
+        "Spinner..."
       ) : (
-        <Container>
-          {pokemonsData?.map((pokemon: ProcessedPokemon) => (
-            <PokemonCard key={pokemon.id} pokemon={pokemon} />
-          ))}
-        </Container>
+        <InfiniteScroll
+          loadMore={handleLoadMore}
+          hasMore={true}
+          initialLoad={false}
+        >
+          <Container>
+            {pokemonsData?.map((pokemon: ProcessedPokemon) => (
+              <PokemonCard key={pokemon.id} pokemon={pokemon} />
+            ))}
+          </Container>
+        </InfiniteScroll>
       )}
     </div>
   );
