@@ -1,33 +1,37 @@
-import React from "react";
-import { ProcessedPokemon } from "../../api/pokeapi";
-import styled from "styled-components";
+import { ProcessedPokemon } from "../../types/interface";
+import { useHistory, withRouter, RouteComponentProps } from "react-router";
+import { Card, Sprite } from "./CommonStyles";
 
-const Card = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 150px;
-  border: 1px solid black;
-  margin: 5px;
-  flex-basis: 21%;
-`;
-
-const Sprite = styled.img`
-  width: 80px;
-  height: 80px;
-  margin: auto;
-`;
-interface PokemonCardProps {
+type PokemonCardProps = {
   pokemon: ProcessedPokemon;
-}
+  src: string;
+};
 
-const PokemonCard = ({ pokemon }: PokemonCardProps) => {
+const PokemonCard = ({
+  pokemon,
+  src,
+}: RouteComponentProps & PokemonCardProps) => {
   const { name, id, sprite } = pokemon;
+  const history = useHistory();
+
+  const handleClick = () => {
+    history.push(`/${name}`);
+  };
+
+  const parsedName = name.charAt(0).toUpperCase() + name.slice(1);
+
   return (
-    <Card>
-      <span style={{ textAlign: "start" }}>{`#${id}`}</span>
-      <Sprite src={sprite} alt="" />
-      <span style={{ marginBottom: "10px" }}>{name}</span>
+    <Card
+      isSearchResult={src === "searchResult"}
+      isPokemonDisplayPage={false}
+      onClick={handleClick}
+    >
+      <span
+        style={{ textAlign: "start", margin: "10px 0 0 10px" }}
+      >{`#${id}`}</span>
+      <Sprite isPokemonDisplayPage={false} src={sprite} alt="" />
+      <span style={{ marginBottom: "10px" }}>{parsedName}</span>
     </Card>
   );
 };
-export default PokemonCard;
+export default withRouter(PokemonCard);

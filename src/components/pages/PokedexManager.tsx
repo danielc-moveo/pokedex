@@ -1,21 +1,28 @@
-import React, { useEffect, useState } from "react";
-import styled from "styled-components";
-import { fetchAndProcessPokemons, ProcessedPokemon } from "../../api/pokeapi";
+import { useEffect, useState, useCallback } from "react";
+import { fetchAndProcessPokemons } from "../../api/pokeapi";
+import { ProcessedPokemon } from "../../types/interface";
 import PokemonCard from "../layout/PokemonCard";
-import InfiniteScroll from "react-infinite-scroller";
-
-const Container = styled.div`
-  display: flex;
-  height: 100%;
-  margin-top: 20px;
-  flex-wrap: wrap;
-  justify-content: center;
-`;
+import SearchBox from "../layout/SearchBox";
+import useSearchResults from "../hooks/useSearchResults";
+import CardsDisplay from "../layout/CardsDisplay";
 
 const PokedexManager = () => {
   const [pokemonsData, setPokemonsData] = useState<ProcessedPokemon[] | []>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [skip, setSkip] = useState<number | null>(null);
+  const [searchField, setSearchField] = useState<string>("");
+  const [errors, setErrors] = useState<string[]>([]);
+
+  const reset = useCallback(() => {
+    setPokemonsData([]);
+    setSkip(0);
+  }, []);
+
+  const { searchResult } = useSearchResults({
+    searchField,
+    reset,
+    setErrors,
+  });
 
   const handleLoadMore = () => {
     setSkip(pokemonsData.length);
@@ -23,36 +30,36 @@ const PokedexManager = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setErrors([]);
       try {
-        const { pokemons } = await fetchAndProcessPokemons(skip);
-        setPokemonsData((prev) => [...prev, ...pokemons]);
-        setIsLoading(false);
+        if (!searchField) {
+          const { pokemons } = await fetchAndProcessPokemons(skip);
+          setPokemonsData((prev) => [...prev, ...pokemons]);
+          setIsLoading(false);
+        }
       } catch (error) {
-        debugger;
-        console.log(error);
+        setErrors((prev) => [...prev, error]);
       }
     };
     fetchData();
-  }, [skip]);
+  }, [skip, searchField]);
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <>
+      <SearchBox setSearchField={setSearchField} />
+      {errors.map((err, key) => (
+        <div key={key}>{err}</div>
+      ))}
       {isLoading ? (
         "Spinner..."
+      ) : !searchField ? (
+        <CardsDisplay handleLoadMore={handleLoadMore} pokemons={pokemonsData} />
       ) : (
-        <InfiniteScroll
-          loadMore={handleLoadMore}
-          hasMore={true}
-          initialLoad={false}
-        >
-          <Container>
-            {pokemonsData?.map((pokemon: ProcessedPokemon) => (
-              <PokemonCard key={pokemon.id} pokemon={pokemon} />
-            ))}
-          </Container>
-        </InfiniteScroll>
+        searchResult && (
+          <PokemonCard src="searchResult" pokemon={searchResult} />
+        )
       )}
-    </div>
+    </>
   );
 };
 

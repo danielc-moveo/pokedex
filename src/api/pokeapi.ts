@@ -1,70 +1,21 @@
+import {
+  AllPokemonsResponse,
+  FetchResponse,
+  PokemonData,
+  ProcessedPokemon,
+  ProcessedPokemonFullData,
+  ProcessedPokemonResult,
+  ProcessedStats,
+  StatResponse,
+  TypeResponse,
+} from "../types/interface";
 import axios from "./";
-
-interface AllPokemonsResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: { name: string; url: string }[];
-}
-
-interface TypeResponse {
-  slot: number;
-  type: {
-    name: string;
-    url: string;
-  };
-}
-
-interface StatResponse {
-  base_stat: number;
-  effort: number;
-  stat: {
-    name: string;
-    url: string;
-  };
-}
-
-interface PokemonResponsePartialData {
-  name: string;
-  sprites: unknown[] & { front_default: string };
-  stats: StatResponse[];
-  types: TypeResponse[];
-  order: string;
-}
-
-interface ProcessedStat {
-  amount: number;
-  name: string;
-}
-
-interface ProcessedStats {
-  values: ProcessedStat[];
-  total: number;
-}
-
-interface ProcessedType {
-  name: string;
-}
-
-type PokemonData = unknown & PokemonResponsePartialData;
-
-export interface ProcessedPokemon {
-  name: string;
-  sprite: string;
-  stats: ProcessedStats;
-  types: ProcessedType[];
-  id: string;
-}
-
-interface FetchResponse {
-  pokemons: ProcessedPokemon[];
-}
 
 export const fetchAndProcessPokemons = async (
   skip: number | null
 ): Promise<FetchResponse> => {
-  const pokemonsResponse = await (
-    await axios.get(`/pokemon?offset=${skip}?limit=${48}}`)
+  const pokemonsResponse = (
+    await axios.get(`/pokemon?offset=${skip}?limit=${20}}`)
   ).data;
   const processedPokemons = await processAllPokemonsResponse(pokemonsResponse);
   return processedPokemons;
@@ -80,8 +31,6 @@ const processAllPokemonsResponse = async (
     )
   );
   const processedPokemons = getProcessedPokemonsObject(pokemonsData);
-  //doesnt include description
-
   return { pokemons: processedPokemons };
 };
 
@@ -89,30 +38,77 @@ const getProcessedPokemonsObject = (
   pokemonsData: PokemonData[]
 ): ProcessedPokemon[] => {
   return pokemonsData.map((pokemon) => {
-    const { name, sprites, stats, types, order } = pokemon;
+    const { name, sprites, id } = pokemon;
     const sprite = sprites.front_default;
-    const processedStats = getProcessStats(stats);
-    const processedTypes = getProcessedTypes(types);
+
     return {
       name,
       sprite,
-      stats: processedStats,
-      types: processedTypes,
-      id: order,
+      id,
     };
   });
 };
 
+export const fetchPokemonBySearchField = async (
+  searchField: string
+): Promise<ProcessedPokemonResult> => {
+  const pokemonResponse = (await axios.get(`/pokemon/${searchField}`)).data;
+  const { name, sprites, id } = pokemonResponse;
+  const sprite = sprites.front_default;
+  return {
+    name,
+    sprite,
+    id,
+  };
+};
+
+export const fetchAndProcessPokemonData = async (
+  pokemonName: string
+): Promise<ProcessedPokemonFullData> => {
+  const pokemonDataPromise = axios.get(`/pokemon/${pokemonName}`);
+  const pokemonSpeciesPromise = axios.get(`/pokemon-species/${pokemonName}`);
+
+  const [pokemonDataResponse, pokemonSpeciesResponse] = await Promise.all([
+    pokemonDataPromise,
+    pokemonSpeciesPromise,
+  ]);
+
+  const { name, sprites, stats, types, id } = pokemonDataResponse.data;
+
+  const { flavor_text } = pokemonSpeciesResponse.data.flavor_text_entries[0];
+  const sprite = sprites.front_default;
+  const processedStats = getProcessStats(stats);
+  const processedTypes = getProcessedTypes(types);
+  return {
+    name,
+    sprite,
+    stats: processedStats,
+    types: processedTypes,
+    id,
+    details: flavor_text,
+  };
+};
+
 const getProcessStats = (stats: StatResponse[]): ProcessedStats => {
   let total = 0;
-  let processedStats = {} as ProcessedStats;
-  processedStats.values = stats.map(({ base_stat, stat }) => {
+  let processedStats = {} as { [key: string]: number };
+  stats.forEach(({ base_stat, stat }) => {
     total += base_stat;
-    return {
-      amount: base_stat,
-      name: stat.name,
-    };
+    const { name } = stat;
+    let processedNameArr = [];
+    let processedNameStr = "";
+
+    if (name.includes("-")) {
+      processedNameArr = name.split("-");
+      processedNameStr = `${
+        processedNameArr[0] +
+        processedNameArr[1].charAt(0).toUpperCase() +
+        processedNameArr[1].slice(1)
+      }`;
+    }
+    processedStats[processedNameStr || name] = base_stat;
   });
+
   processedStats.total = total;
   return processedStats;
 };

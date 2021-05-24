@@ -8,17 +8,21 @@ import {
 } from "react-router-dom";
 import PokemonDisplay from "./components/pages/PokemonDisplay";
 import styled from "styled-components";
+import PokadexLogo from "./assets/Logo.svg";
 
-const Logo = styled.div`
-  text-align: center;
+const Logo = styled.img`
   margin-top: 10px;
+  display: block;
+  margin: 40px auto;
+  @media (max-width: 500px) {
+    width: 250px;
+  }
 `;
+
 const App = () => {
-  
- 
   return (
-    <div style={{ height: "100%" }}>
-      <Logo>--Logo-</Logo>
+    <div style={{ textAlign: "center" }}>
+      <Logo src={PokadexLogo} alt="" />
       <Router>
         <Switch>
           <Route exact path="/" component={PokedexManager} />
