@@ -19,7 +19,7 @@ const useSearchResults = ({
     const fetchData = async () => {
       if (!searchField) setSearchResults(null);
       else {
-        reset()
+        reset();
         try {
           const { id, sprite, name } = await fetchPokemonBySearchField(
             searchField
@@ -38,7 +38,6 @@ const useSearchResults = ({
     };
 
     fetchData();
-    return () => {};
   }, [searchField, reset, setErrors]);
 
   return { searchResult };
